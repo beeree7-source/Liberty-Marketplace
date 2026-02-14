@@ -19,5 +19,3 @@ app.post("/api/users/:id/approve", approveUser);
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
-
-

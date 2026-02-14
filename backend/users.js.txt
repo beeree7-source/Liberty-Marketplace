@@ -12,4 +12,18 @@ const registerUser = (req, res) => {
   res.json({ message: "User registered", user });
 };
 
-module.exports = { registerUser };
+// POST /api/users/:id/approve
+const approveUser = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  if (user.role !== "retailer") {
+    return res.status(400).json({ error: "Only retailers need approval" });
+  }
+  user.approved = true;
+  res.json({ message: "User approved", user });
+};
+
+module.exports = { registerUser, approveUser };
