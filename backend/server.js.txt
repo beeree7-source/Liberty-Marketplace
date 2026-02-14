@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser } = require("./users");
+const { registerUser, approveUser } = require("./users");
 const app = express();
 
 const PORT = process.env.PORT || 4000;
@@ -13,6 +13,11 @@ app.get("/", (req, res) => {
 // Register new user (retailer or supplier)
 app.post("/api/users/register", registerUser);
 
+// Approve retailer (only suppliers can do this)
+app.post("/api/users/:id/approve", approveUser);
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
+
+
