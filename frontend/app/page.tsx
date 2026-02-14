@@ -150,3 +150,38 @@ export default function Dashboard() {
     </main>
   );
 }
+
+// Add new state
+const [trackingNumber, setTrackingNumber] = useState('');
+const [trackingResult, setTrackingResult] = useState(null);
+
+// Add these functions
+const trackUSPS = async () => {
+  const data = await apiCall('/api/shipping/track/usps', { trackingNumber });
+  setTrackingResult(data);
+};
+
+const trackUPS = async () => {
+  const data = await apiCall('/api/shipping/track/ups', { trackingNumber });
+  setTrackingResult(data);
+};
+
+// Add this UI section (after Orders table)
+<div style={{ marginTop: "3rem", padding: "2rem", background: "#fff3cd", borderRadius: "8px" }}>
+  <h3>📦 Track Shipment</h3>
+  <input 
+    type="text" 
+    placeholder="Tracking #" 
+    value={trackingNumber}
+    onChange={(e) => setTrackingNumber(e.target.value)}
+    style={{ padding: "0.5rem", marginRight: "1rem", width: "300px" }}
+  />
+  <button onClick={trackUSPS} style={{ marginRight: "1rem" }}>USPS</button>
+  <button onClick={trackUPS}>UPS</button>
+  
+  {trackingResult && (
+    <div style={{ marginTop: "1rem", padding: "1rem", background: "white", borderRadius: "4px" }}>
+      <strong>{trackingResult.carrier}:</strong> {trackingResult.status}
+    </div>
+  )}
+</div>
