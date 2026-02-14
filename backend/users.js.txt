@@ -26,4 +26,16 @@ const approveUser = (req, res) => {
   res.json({ message: "User approved", user });
 };
 
-module.exports = { registerUser, approveUser };
+// POST /api/users/:id/license
+const uploadLicense = (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  const { licenseNumber, expirationDate, fileName } = req.body;
+  user.license = { licenseNumber, expirationDate, fileName, verified: false };
+  res.json({ message: "License uploaded", user });
+};
+
+module.exports = { registerUser, approveUser, uploadLicense };
