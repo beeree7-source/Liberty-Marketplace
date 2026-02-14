@@ -1,4 +1,5 @@
 const express = require("express");
+const { registerUser } = require("./users");
 const app = express();
 
 const PORT = process.env.PORT || 4000;
@@ -8,6 +9,9 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({ message: "Cigar Order Hub backend is running" });
 });
+
+// Register new user (retailer or supplier)
+app.post("/api/users/register", registerUser);
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
