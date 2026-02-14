@@ -29,3 +29,7 @@ app.listen(PORT, () => {
 
 // auth routes
 app.use('/api/shipping', shippingRoutes);
+
+const { createProduct, getProductsBySupplier } = require('./products');
+app.post('/api/products', authenticateToken, createProduct);
+app.get('/api/products/supplier/:supplierId', authenticateToken, getProductsBySupplier);
