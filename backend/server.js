@@ -34,3 +34,7 @@ const { createProduct, getProductsBySupplier, searchProducts } = require('./prod
 app.post('/api/products', authenticateToken, createProduct);
 app.get('/api/products/supplier/:supplierId', authenticateToken, getProductsBySupplier);
 app.get('/api/products/search', authenticateToken, searchProducts);
+
+// After other routes
+import inventoryRoutes from './routes/inventory';
+app.use('/api/inventory', inventoryRoutes);
