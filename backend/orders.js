@@ -1,23 +1,26 @@
-let orders = [];
+const db = require("./database");
 
-// POST /api/orders (retailer creates order for supplier)
+// POST /api/orders
 const createOrder = (req, res) => {
   const { retailerId, supplierId, items } = req.body;
-  // Check if retailer is approved
-  const retailer = require("./users").users?.find(u => u.id === retailerId);
-  if (!retailer || !retailer.approved) {
-    return res.status(403).json({ error: "Retailer not approved" });
-  }
-  const order = {
-    id: Date.now(),
-    retailerId,
-    supplierId,
-    items, // e.g. [{product: "Cohiba", qty: 10}]
-    status: "pending",
-    createdAt: new Date().toISOString()
-  };
-  orders.push(order);
-  res.json({ message: "Order created", order });
+  
+  // Check if retailer approved
+  db.get("SELECT approved FROM users WHERE id = ?", [retailerId], (err, retailer) => {
+    if (err || !retailer || !retailer.approved) {
+      return res.status(403).json({ error: "Retailer not approved" });
+    }
+    
+    db.run(
+      "INSERT INTO orders (retailer_id, supplier_id, items) VALUES (?, ?, ?)",
+      [retailerId, supplierId, JSON.stringify(items)],
+      function(err) {
+        if (err) return res.status(400).json({ error: err.message });
+        res.json({ message: "Order created", order: { id: this.lastID, retailerId, supplierId, items, status: "pending" } });
+      }
+    );
+  });
 };
 
 module.exports = { createOrder };
+
+
