@@ -190,3 +190,37 @@ const [products, setProducts] = useState([]);
 const loadProducts = async (supplierId) => setProducts(await apiCall(`/api/products/supplier/${supplierId}`));
 <button onClick={() => loadProducts(1)}>Load Supplier Products</button>
 {products.map(p => <div>{p.name} - ${p.price}</div>)}
+
+const [newProduct, setNewProduct] = useState({name:'', sku:'', price:0, stock:0});
+const [supplierProducts, setSupplierProducts] = useState([]);
+const [searchQuery, setSearchQuery] = useState('');
+
+const addProduct = async () => {
+  await apiCall('/api/products', { method: 'POST', body: JSON.stringify({...newProduct, supplierId: 1}) });
+  loadSupplierProducts(1);
+};
+
+const loadSupplierProducts = async (id) => {
+  setSupplierProducts(await apiCall(`/api/products/supplier/${id}`));
+};
+
+const searchProducts = async () => {
+  setSupplierProducts(await apiCall(`/api/products/search?query=${searchQuery}&supplierId=1`));
+};
+
+// JSX:
+<h2>Supplier Catalog</h2>
+<input placeholder="Name" onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+<input placeholder="SKU" onChange={e => setNewProduct({...newProduct, sku: e.target.value})} />
+<input type="number" placeholder="Price" onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} />
+<button onClick={addProduct}>Add Product</button>
+<input placeholder="Search products" onChange={e => setSearchQuery(e.target.value)} />
+<button onClick={searchProducts}>Search</button>
+{supplierProducts.map(p => (
+  <div key={p.id} style={{border: '1px solid #ccc', margin: '10px', padding: '10px'}}>
+    <img src={p.imageUrl} alt={p.name} width="50" />
+    <h3>{p.name}</h3>
+    <p>SKU: {p.sku} | ${p.price} | Stock: {p.stock}</p>
+    <p>{p.description}</p>
+  </div>
+))}
