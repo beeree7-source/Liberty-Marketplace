@@ -21,6 +21,15 @@ const createOrder = (req, res) => {
   });
 };
 
-module.exports = { createOrder };
+// GET /api/orders
+const getOrders = (req, res) => {
+  db.all("SELECT * FROM orders", (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows.map(row => ({ ...row, items: JSON.parse(row.items) })));
+  });
+};
+
+module.exports = { createOrder, getOrders };
+
 
 
