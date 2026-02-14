@@ -1,42 +1,152 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
   const [token, setToken] = useState("");
+  const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [message, setMessage] = useState("");
+  const [userId, setUserId] = useState(0);
+
+  const apiCall = async (url: string, body?: any, isGet = false) => {
+    const headers: any = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    
+    const res = await fetch(`http://localhost:4000${url}`, {
+      method: isGet ? "GET" : "POST",
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    setMessage(data.message || data.error);
+    return data;
+  };
+
+  const registerSupplier = async () => {
+    await apiCall("/api/users/register", {
+      name: "Test Supplier", 
+      email: "supplier@test.com",
+      role: "supplier",
+      password: "password123"
+    });
+  };
 
   const login = async () => {
-    const res = await fetch("http://localhost:4000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "supplier@test.com", password: "password123" })
+    const data = await apiCall("/api/auth/login", {
+      email: "supplier@test.com",
+      password: "password123"
     });
-    const data = await res.json();
     if (data.token) setToken(data.token);
-    setMessage(data.message || data.error);
   };
 
-  const testProtected = async () => {
-    const res = await fetch("http://localhost:4000/api/protected/users", {
-      headers: { 
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    });
-    const data = await res.json();
-    setMessage(data.message || JSON.stringify(data));
+  const loadUsers = async () => {
+    const data = await apiCall("/api/protected/users", null, true);
+    setUsers(data || []);
   };
+
+  const loadOrders = async () => {
+    const data = await apiCall("/api/protected/orders", null, true);
+    setOrders(data || []);
+  };
+
+  const createOrder = async () => {
+    await apiCall("/api/protected/orders", {
+      retailerId: userId,
+      product: "Cuban Cohiba",
+      quantity: 50,
+      price: 25.00
+    });
+    loadOrders();
+  };
+
+  useEffect(() => {
+    if (token) {
+      loadUsers();
+      loadOrders();
+    }
+  }, [token]);
 
   return (
-    <main>
-      <h1>Cigar Order Hub - JWT Test</h1>
+    <main style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+      <h1>🚬 Cigar Order Hub</h1>
+      
       {!token ? (
-        <button onClick={login}>Login (supplier@test.com / password123)</button>
+        <div style={{ background: "#f0f8ff", padding: "2rem", borderRadius: "8px", margin: "2rem 0" }}>
+          <h2>🔐 Login Required</h2>
+          <button onClick={registerSupplier} style={{ padding: "1rem 2rem", marginRight: "1rem" }}>
+            1. Register Supplier
+          </button>
+          <button onClick={login} style={{ padding: "1rem 2rem" }}>
+            2. Login
+          </button>
+          <p style={{ marginTop: "1rem" }}>{message}</p>
+        </div>
       ) : (
-        <button onClick={testProtected}>Test Protected Route</button>
+        <div>
+          <div style={{ background: "#d4edda", padding: "1rem", borderRadius: "8px", marginBottom: "2rem" }}>
+            ✅ Logged in | <button onClick={() => setToken("")}>Logout</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+            {/* Users */}
+            <div>
+              <h3>👥 Users</h3>
+              <button onClick={loadUsers}>Refresh</button>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
+                <thead>
+                  <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr>
+                </thead>
+                <tbody>
+                  {users.map((user: any) => (
+                    <tr key={user.id}>
+                      <td>{user.id}</td>
+                      <td>{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>{user.role}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Orders */}
+            <div>
+              <h3>📦 Orders</h3>
+              <button onClick={loadOrders}>Refresh</button>
+              <div style={{ margin: "1rem 0" }}>
+                <input 
+                  type="number" 
+                  placeholder="Retailer ID" 
+                  value={userId} 
+                  onChange={(e) => setUserId(Number(e.target.value))}
+                  style={{ padding: "0.5rem", marginRight: "1rem" }}
+                />
+                <button onClick={createOrder}>Create Order</button>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr><th>ID</th><th>Retailer</th><th>Product</th><th>Qty</th><th>Price</th></tr>
+                </thead>
+                <tbody>
+                  {orders.map((order: any) => (
+                    <tr key={order.id}>
+                      <td>{order.id}</td>
+                      <td>{order.retailerId}</td>
+                      <td>{order.product}</td>
+                      <td>{order.quantity}</td>
+                      <td>${order.price}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
-      <p>{message}</p>
+      <p style={{ marginTop: "3rem", fontSize: "0.9rem", color: "#666" }}>
+        Status: {message}
+      </p>
     </main>
   );
 }
