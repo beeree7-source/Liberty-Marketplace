@@ -13,7 +13,8 @@ export default function Dashboard() {
     const headers: any = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     
-    const res = await fetch(`http://localhost:4000${url}`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${apiUrl}${url}`, {
       method: isGet ? "GET" : "POST",
       headers,
       body: body ? JSON.stringify(body) : undefined,
