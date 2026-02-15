@@ -163,6 +163,7 @@ const calculatePayroll = (req, res) => {
         let totalPayroll = 0;
         let totalHours = 0;
         let recordsCreated = 0;
+        let processedCount = 0;
 
         if (employees.length === 0) {
           return res.json({ 
@@ -239,14 +240,16 @@ const calculatePayroll = (req, res) => {
               netPay.toFixed(2)
             ],
             function(err) {
+              processedCount++;
+              
               if (err) {
                 console.error('Error creating payroll record:', err);
               } else {
                 recordsCreated++;
               }
 
-              // If last employee, update period totals
-              if (index === employees.length - 1) {
+              // If all employees processed, update period totals
+              if (processedCount === employees.length) {
                 const updatePeriodQuery = `
                   UPDATE payroll_periods 
                   SET total_employees = ?,

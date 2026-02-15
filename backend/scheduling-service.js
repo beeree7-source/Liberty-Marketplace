@@ -226,7 +226,7 @@ const updateSchedule = (req, res) => {
 const deleteSchedule = (req, res) => {
   const { id } = req.params;
 
-  const query = 'UPDATE employee_schedules SET status = \'cancelled\' WHERE id = ?';
+  const query = `UPDATE employee_schedules SET status = 'cancelled' WHERE id = ?`;
 
   db.run(query, [id], function(err) {
     if (err) {

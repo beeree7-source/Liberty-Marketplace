@@ -259,6 +259,7 @@ const autoDetectOvertime = (req, res) => {
       }
 
       let recordsCreated = 0;
+      let processedCount = 0;
       const insertQuery = `
         INSERT INTO overtime_records (
           company_id, employee_id, overtime_date, overtime_hours, 
@@ -281,11 +282,14 @@ const autoDetectOvertime = (req, res) => {
             'Auto-detected from weekly hours'
           ],
           function(err) {
+            processedCount++;
+            
             if (!err) {
               recordsCreated++;
             }
 
-            if (index === rows.length - 1) {
+            // Send response only after all operations complete
+            if (processedCount === rows.length) {
               res.json({
                 message: 'Overtime detection completed',
                 records_created: recordsCreated,

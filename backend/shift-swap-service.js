@@ -274,7 +274,7 @@ const cancelSwapRequest = (req, res) => {
 
   const query = `
     UPDATE shift_swap_requests 
-    SET status = 'denied'
+    SET status = 'cancelled'
     WHERE id = ? AND requesting_employee_id = ? AND status = 'pending'
   `;
 
@@ -396,7 +396,7 @@ const offerToCover = (req, res) => {
   }
 
   // Get swap request details
-  const requestQuery = 'SELECT * FROM shift_swap_requests WHERE id = ? AND status = \'pending\'';
+  const requestQuery = `SELECT * FROM shift_swap_requests WHERE id = ? AND status = 'pending'`;
   
   db.get(requestQuery, [request_id], (err, request) => {
     if (err) {

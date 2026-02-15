@@ -133,6 +133,7 @@ const bulkMarkAttendance = (req, res) => {
 
   let completed = 0;
   let errors = [];
+  let processedCount = 0;
 
   attendance_records.forEach((record, index) => {
     db.run(
@@ -148,13 +149,16 @@ const bulkMarkAttendance = (req, res) => {
         record.approved_by || null
       ],
       function(err) {
+        processedCount++;
+        
         if (err) {
           errors.push({ index, error: err.message });
         } else {
           completed++;
         }
 
-        if (index === attendance_records.length - 1) {
+        // Send response only after all operations complete
+        if (processedCount === attendance_records.length) {
           res.json({
             message: 'Bulk attendance marking completed',
             total: attendance_records.length,

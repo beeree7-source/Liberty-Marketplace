@@ -399,6 +399,7 @@ const bulkImportEntries = (req, res) => {
 
   let completed = 0;
   let errors = [];
+  let processedCount = 0;
 
   entries.forEach((entry, index) => {
     db.run(
@@ -414,13 +415,16 @@ const bulkImportEntries = (req, res) => {
         entry.notes || null
       ],
       function(err) {
+        processedCount++;
+        
         if (err) {
           errors.push({ index, error: err.message });
         } else {
           completed++;
         }
 
-        if (index === entries.length - 1) {
+        // Send response only after all operations complete
+        if (processedCount === entries.length) {
           res.json({
             message: 'Bulk import completed',
             total: entries.length,
