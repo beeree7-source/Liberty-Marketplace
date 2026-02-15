@@ -6,7 +6,7 @@ const JWT_SECRET = "cigar-hub-secret-2026-change-in-production"; // Change this!
 // Middleware: verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" "); // Bearer TOKEN
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" });
