@@ -30,15 +30,18 @@ const searchProducts = (req, res) => {
   );
 };
 
-module.exports = { createProduct, getProductsBySupplier, searchProducts };
-
 const updateStock = (req, res) => {
   const productId = req.params.id;
   const { adjustment, reason } = req.body; // +5 incoming, -3 shipped
   db.run(`UPDATE products SET stock = stock + ? WHERE id = ?`, [adjustment, productId],
     function(err) {
       if (err || this.changes === 0) return res.status(400).json({ error: 'Product not found' });
-      res.json({ message: 'Stock updated', newStock: /* query current */ });
+      db.get(`SELECT stock FROM products WHERE id = ?`, [productId], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Stock updated', newStock: row.stock });
+      });
     }
   );
 };
+
+module.exports = { createProduct, getProductsBySupplier, searchProducts, updateStock };

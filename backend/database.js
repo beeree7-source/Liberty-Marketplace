@@ -11,6 +11,7 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
       role TEXT CHECK(role IN ('retailer', 'supplier')) NOT NULL,
       approved BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -42,18 +43,21 @@ db.serialize(() => {
       FOREIGN KEY(user_id) REFERENCES users(id)
     )
   `);
+
+  // Create products table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      supplierId INTEGER,
+      name TEXT,
+      sku TEXT UNIQUE,
+      price REAL,
+      stock INTEGER,
+      imageUrl TEXT,
+      description TEXT,
+      FOREIGN KEY(supplierId) REFERENCES users(id)
+    )
+  `);
 });
 
 module.exports = db;
-
-db.run(`CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  supplierId INTEGER,
-  name TEXT,
-  sku TEXT UNIQUE,
-  price REAL,
-  stock INTEGER,
-  imageUrl TEXT,
-  description TEXT,
-  FOREIGN KEY(supplierId) REFERENCES users(id)
-)`);
