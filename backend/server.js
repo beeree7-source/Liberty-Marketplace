@@ -752,6 +752,156 @@ app.get('/api/reps/performance/comparison/:manager_id', authenticateToken, perfo
 app.post('/api/reps/create', authenticateToken, salesRepService.createSalesRep);
 app.get('/api/reps/user/:user_id', authenticateToken, salesRepService.getSalesRepByUserId);
 
+// ============================================
+// Employee Scheduling & Time Clock System
+// ============================================
+
+const schedulingService = require('./scheduling-service');
+const timeClockService = require('./time-clock-service');
+const payrollService = require('./payroll-service');
+const attendanceService = require('./attendance-service');
+const overtimeService = require('./overtime-service');
+const shiftSwapService = require('./shift-swap-service');
+
+// Shift Definitions (4 endpoints)
+app.post('/api/:role/shifts/create', authenticateToken, schedulingService.createShift);
+app.get('/api/:role/shifts/:company_id', authenticateToken, schedulingService.getShifts);
+app.put('/api/:role/shifts/:id', authenticateToken, schedulingService.updateShift);
+app.delete('/api/:role/shifts/:id', authenticateToken, schedulingService.deleteShift);
+
+// Schedule Management (8 endpoints)
+app.post('/api/:role/schedules/create', authenticateToken, schedulingService.createSchedule);
+app.get('/api/:role/schedules/:id', authenticateToken, schedulingService.getSchedule);
+app.put('/api/:role/schedules/:id', authenticateToken, schedulingService.updateSchedule);
+app.delete('/api/:role/schedules/:id', authenticateToken, schedulingService.deleteSchedule);
+app.get('/api/:role/schedules/week/:company_id/:date', authenticateToken, schedulingService.getWeeklySchedules);
+app.get('/api/:role/schedules/month/:company_id/:date', authenticateToken, schedulingService.getMonthlySchedules);
+app.post('/api/:role/schedules/publish', authenticateToken, schedulingService.publishSchedules);
+app.get('/api/:role/schedules/conflicts/:company_id', authenticateToken, schedulingService.detectConflicts);
+
+// Additional Schedule endpoints
+app.post('/api/:role/schedules/recurring', authenticateToken, schedulingService.createRecurringSchedules);
+app.get('/api/:role/schedules/coverage/:company_id/:department_id', authenticateToken, schedulingService.getDepartmentCoverage);
+app.get('/api/:role/schedules/employee/:employee_id', authenticateToken, schedulingService.getEmployeeSchedules);
+
+// Time Clock (8 endpoints)
+app.post('/api/:role/timeclock/clock-in', authenticateToken, timeClockService.clockIn);
+app.post('/api/:role/timeclock/clock-out', authenticateToken, timeClockService.clockOut);
+app.get('/api/:role/timeclock/status/:employee_id', authenticateToken, timeClockService.getClockStatus);
+app.get('/api/:role/timeclock/entries/today/:employee_id', authenticateToken, timeClockService.getTodayEntries);
+app.get('/api/:role/timeclock/entries/range/:company_id', authenticateToken, timeClockService.getEntriesInRange);
+app.post('/api/:role/timeclock/adjust', authenticateToken, timeClockService.adjustTimeEntry);
+app.delete('/api/:role/timeclock/:id', authenticateToken, timeClockService.deleteTimeEntry);
+app.post('/api/:role/timeclock/bulk-import', authenticateToken, timeClockService.bulkImportEntries);
+
+// Additional Time Clock endpoints
+app.post('/api/:role/timeclock/break/start', authenticateToken, timeClockService.startBreak);
+app.post('/api/:role/timeclock/break/end', authenticateToken, timeClockService.endBreak);
+app.get('/api/:role/timeclock/late-arrivals/:company_id', authenticateToken, timeClockService.getLateArrivals);
+app.get('/api/:role/timeclock/timesheet-hours', authenticateToken, timeClockService.calculateTimesheetHours);
+
+// Timesheets (8 endpoints) - Note: Timesheet management is part of payroll service
+app.get('/api/:role/timesheets/current', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.get('/api/:role/timesheets/:period', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.post('/api/:role/timesheets/submit', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.put('/api/:role/timesheets/:id/approve', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.put('/api/:role/timesheets/:id/reject', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.get('/api/:role/timesheets/history', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.post('/api/:role/timesheets/export', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+app.get('/api/:role/timesheets/pending-approval', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Timesheet endpoints will be implemented with full timesheet service' });
+});
+
+// Overtime (6 endpoints)
+app.post('/api/:role/overtime/record', authenticateToken, overtimeService.recordOvertime);
+app.get('/api/:role/overtime/today/:company_id', authenticateToken, overtimeService.getTodayOvertime);
+app.get('/api/:role/overtime/month/:company_id', authenticateToken, overtimeService.getMonthlyOvertime);
+app.post('/api/:role/overtime/approve/:id', authenticateToken, overtimeService.approveOvertime);
+app.get('/api/:role/overtime/pending/:company_id', authenticateToken, overtimeService.getPendingOvertime);
+app.post('/api/:role/overtime/export/:company_id', authenticateToken, overtimeService.exportOvertime);
+
+// Additional Overtime endpoints
+app.post('/api/:role/overtime/reject/:id', authenticateToken, overtimeService.rejectOvertime);
+app.post('/api/:role/overtime/auto-detect', authenticateToken, overtimeService.autoDetectOvertime);
+app.get('/api/:role/overtime/forecast/:company_id', authenticateToken, overtimeService.getOvertimeForecast);
+app.get('/api/:role/overtime/summary/:company_id', authenticateToken, overtimeService.getOvertimeSummaryByDepartment);
+
+// Attendance (6 endpoints)
+app.post('/api/:role/attendance/mark', authenticateToken, attendanceService.markAttendance);
+app.get('/api/:role/attendance/today/:company_id', authenticateToken, attendanceService.getTodayAttendance);
+app.get('/api/:role/attendance/month/:company_id', authenticateToken, attendanceService.getMonthlyAttendance);
+app.post('/api/:role/attendance/bulk-mark', authenticateToken, attendanceService.bulkMarkAttendance);
+app.get('/api/:role/attendance/report/:company_id', authenticateToken, attendanceService.getAttendanceReport);
+app.post('/api/:role/attendance/absence-request', authenticateToken, attendanceService.submitAbsenceRequest);
+
+// Additional Attendance endpoints
+app.post('/api/:role/attendance/approve/:id', authenticateToken, attendanceService.approveAbsenceRequest);
+app.get('/api/:role/attendance/patterns/:company_id', authenticateToken, attendanceService.detectAttendancePatterns);
+app.get('/api/:role/attendance/summary/:company_id', authenticateToken, attendanceService.getAttendanceSummary);
+
+// Shift Swap (6 endpoints)
+app.post('/api/:role/shifts/swap-request', authenticateToken, shiftSwapService.createSwapRequest);
+app.get('/api/:role/shifts/swap-requests/:company_id', authenticateToken, shiftSwapService.getSwapRequests);
+app.post('/api/:role/shifts/swap-approve/:id', authenticateToken, shiftSwapService.approveSwapRequest);
+app.post('/api/:role/shifts/swap-deny/:id', authenticateToken, shiftSwapService.denySwapRequest);
+app.get('/api/:role/shifts/available/:company_id', authenticateToken, shiftSwapService.getAvailableShifts);
+app.post('/api/:role/shifts/coverage-request', authenticateToken, shiftSwapService.requestCoverage);
+
+// Additional Shift Swap endpoints
+app.post('/api/:role/shifts/swap-cancel/:id', authenticateToken, shiftSwapService.cancelSwapRequest);
+app.post('/api/:role/shifts/offer-cover', authenticateToken, shiftSwapService.offerToCover);
+app.get('/api/:role/shifts/swap-history/:employee_id', authenticateToken, shiftSwapService.getSwapHistory);
+
+// Payroll (8 endpoints)
+app.post('/api/:role/payroll/create-period', authenticateToken, payrollService.createPayrollPeriod);
+app.get('/api/:role/payroll/periods/:company_id', authenticateToken, payrollService.getPayrollPeriods);
+app.get('/api/:role/payroll/periods/:id', authenticateToken, payrollService.getPayrollPeriod);
+app.post('/api/:role/payroll/calculate/:period_id', authenticateToken, payrollService.calculatePayroll);
+app.get('/api/:role/payroll/records/:employee_id', authenticateToken, payrollService.getEmployeePayrollRecords);
+app.put('/api/:role/payroll/records/:id/approve', authenticateToken, payrollService.approvePayrollRecord);
+app.post('/api/:role/payroll/process-payment', authenticateToken, payrollService.processPayment);
+app.get('/api/:role/payroll/export/:period_id', authenticateToken, payrollService.exportPayroll);
+
+// Additional Payroll endpoints
+app.get('/api/:role/payroll/period-records/:period_id', authenticateToken, payrollService.getPeriodPayrollRecords);
+app.get('/api/:role/payroll/summary/:company_id/:period_id', authenticateToken, payrollService.getPayrollSummaryByDepartment);
+app.get('/api/:role/payroll/settings/:company_id', authenticateToken, payrollService.getPayrollSettings);
+app.put('/api/:role/payroll/settings/:company_id', authenticateToken, payrollService.updatePayrollSettings);
+
+// Reports & Analytics (6 endpoints) - Placeholder for now
+app.get('/api/:role/reports/employee-hours', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+app.get('/api/:role/reports/department-hours', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+app.get('/api/:role/reports/overtime-summary', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+app.get('/api/:role/reports/attendance-summary', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+app.get('/api/:role/reports/labor-cost', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+app.get('/api/:role/reports/scheduling-efficiency', authenticateToken, (req, res) => {
+  res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
