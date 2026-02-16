@@ -12,6 +12,7 @@ const sharp = require('sharp');
 // Configuration
 const UPLOAD_DIR = process.env.DOCUMENT_STORAGE_PATH || path.join(__dirname, '../uploads/documents');
 const MAX_FILE_SIZE = parseInt(process.env.MAX_DOCUMENT_SIZE || '52428800'); // 50MB default
+const MAX_FILE_SIZE_MB = MAX_FILE_SIZE / 1024 / 1024; // Convert to MB for display
 const ALLOWED_FILE_TYPES = (process.env.ALLOWED_DOCUMENT_TYPES || 'pdf,jpg,jpeg,png,doc,docx').split(',');
 
 // Ensure upload directory exists
@@ -47,7 +48,7 @@ function validateDocumentFile(file) {
 
   // Check file size
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+    throw new Error(`File size exceeds maximum allowed size of ${MAX_FILE_SIZE_MB}MB`);
   }
 
   // Check file type

@@ -310,7 +310,7 @@ async function getSignatureStatus(req, res) {
 
     res.json({
       contractStatus: contract.status,
-      isSigned: signature !== null && signature !== undefined,
+      isSigned: signature != null,
       signature: signature || null
     });
 

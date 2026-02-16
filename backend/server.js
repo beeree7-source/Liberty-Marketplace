@@ -1252,6 +1252,7 @@ app.post('/api/protected/warehouse/users/:userId', authenticateToken, async (req
 // ============================================
 
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const documentService = require('./document-service');
 const contractService = require('./contract-service');
 const signatureService = require('./signature-service');
@@ -1264,28 +1265,46 @@ const upload = multer({
   }
 });
 
+// Rate limiter for document uploads (10 uploads per 5 minutes)
+const uploadLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10,
+  message: 'Too many uploads from this IP, please try again after 5 minutes',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiter for contract operations (20 operations per 5 minutes)
+const contractLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20,
+  message: 'Too many contract operations from this IP, please try again after 5 minutes',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Documents - Upload and Management
-app.post('/api/protected/documents/upload', authenticateToken, upload.single('file'), documentService.uploadDocument);
+app.post('/api/protected/documents/upload', uploadLimiter, authenticateToken, upload.single('file'), documentService.uploadDocument);
 app.get('/api/protected/documents/supplier/:supplierId/retailer/:retailerId', authenticateToken, documentService.getSupplierDocuments);
 app.get('/api/protected/documents/:id/download', authenticateToken, documentService.getDocument);
 app.delete('/api/protected/documents/:id', authenticateToken, documentService.deleteDocument);
-app.post('/api/protected/documents/:id/scan-enhance', authenticateToken, documentService.scanAndEnhanceDocument);
+app.post('/api/protected/documents/:id/scan-enhance', uploadLimiter, authenticateToken, documentService.scanAndEnhanceDocument);
 app.get('/api/protected/documents/:id/audit-log', authenticateToken, documentService.getDocumentAuditLog);
 
 // Contracts - Creation and Management
-app.post('/api/protected/contracts/create', authenticateToken, contractService.createContract);
-app.post('/api/protected/contracts/:id/send', authenticateToken, contractService.sendContractToRetailer);
+app.post('/api/protected/contracts/create', contractLimiter, authenticateToken, contractService.createContract);
+app.post('/api/protected/contracts/:id/send', contractLimiter, authenticateToken, contractService.sendContractToRetailer);
 app.get('/api/protected/contracts/:id', authenticateToken, contractService.getContractDetails);
 app.get('/api/protected/contracts/supplier/:supplierId', authenticateToken, contractService.getSupplierContracts);
 app.get('/api/protected/contracts/retailer/:retailerId/pending', authenticateToken, contractService.getPendingContracts);
-app.put('/api/protected/contracts/:id/status', authenticateToken, contractService.updateContractStatus);
+app.put('/api/protected/contracts/:id/status', contractLimiter, authenticateToken, contractService.updateContractStatus);
 app.get('/api/protected/contracts/:id/audit-log', authenticateToken, contractService.getContractAuditLog);
 
 // E-Signatures - Digital Signing Workflow
 app.post('/api/protected/contracts/:contractId/signature/initialize', authenticateToken, signatureService.initializeSignatureWorkflow);
-app.post('/api/protected/contracts/:contractId/signature', authenticateToken, signatureService.saveSignature);
+app.post('/api/protected/contracts/:contractId/signature', contractLimiter, authenticateToken, signatureService.saveSignature);
 app.get('/api/protected/contracts/:contractId/signature-status', authenticateToken, signatureService.getSignatureStatus);
-app.post('/api/protected/contracts/:contractId/complete', authenticateToken, signatureService.completeContractSigning);
+app.post('/api/protected/contracts/:contractId/complete', contractLimiter, authenticateToken, signatureService.completeContractSigning);
 app.get('/api/protected/contracts/:contractId/download', authenticateToken, signatureService.downloadSignedContract);
 
 // Initialize HTTP server for WebSocket
