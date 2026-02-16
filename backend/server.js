@@ -906,9 +906,27 @@ app.get('/api/:role/reports/scheduling-efficiency', authenticateToken, (req, res
 // Communication Endpoints (Messages & Calls)
 // ============================================
 const communication = require('./communication');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiters for communication endpoints
+const messageRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute
+  message: 'Too many message requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const callRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute
+  message: 'Too many call requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Messaging Endpoints
-app.post('/api/protected/messages/send', authenticateToken, async (req, res) => {
+app.post('/api/protected/messages/send', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const { recipientId, content, messageType, attachmentUrl, attachmentName } = req.body;
     const result = await communication.sendMessage(
@@ -925,7 +943,7 @@ app.post('/api/protected/messages/send', authenticateToken, async (req, res) => 
   }
 });
 
-app.get('/api/protected/messages/conversations', authenticateToken, async (req, res) => {
+app.get('/api/protected/messages/conversations', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -936,7 +954,7 @@ app.get('/api/protected/messages/conversations', authenticateToken, async (req, 
   }
 });
 
-app.get('/api/protected/messages/thread/:userId', authenticateToken, async (req, res) => {
+app.get('/api/protected/messages/thread/:userId', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const otherUserId = parseInt(req.params.userId);
     const page = parseInt(req.query.page) || 1;
@@ -948,7 +966,7 @@ app.get('/api/protected/messages/thread/:userId', authenticateToken, async (req,
   }
 });
 
-app.put('/api/protected/messages/:id/read', authenticateToken, async (req, res) => {
+app.put('/api/protected/messages/:id/read', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const messageId = parseInt(req.params.id);
     const result = await communication.markMessageAsRead(messageId, req.user.id);
@@ -958,7 +976,7 @@ app.put('/api/protected/messages/:id/read', authenticateToken, async (req, res) 
   }
 });
 
-app.delete('/api/protected/messages/:id', authenticateToken, async (req, res) => {
+app.delete('/api/protected/messages/:id', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const messageId = parseInt(req.params.id);
     const result = await communication.deleteMessage(messageId, req.user.id);
@@ -968,7 +986,7 @@ app.delete('/api/protected/messages/:id', authenticateToken, async (req, res) =>
   }
 });
 
-app.get('/api/protected/messages/unread/count', authenticateToken, async (req, res) => {
+app.get('/api/protected/messages/unread/count', authenticateToken, messageRateLimiter, async (req, res) => {
   try {
     const count = await communication.getUnreadCount(req.user.id);
     res.json({ count });
@@ -978,7 +996,7 @@ app.get('/api/protected/messages/unread/count', authenticateToken, async (req, r
 });
 
 // Call Log Endpoints
-app.post('/api/protected/calls/initiate', authenticateToken, async (req, res) => {
+app.post('/api/protected/calls/initiate', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const { recipientId, callType } = req.body;
     const result = await communication.initiateCall(req.user.id, recipientId, callType || 'outbound');
@@ -988,7 +1006,7 @@ app.post('/api/protected/calls/initiate', authenticateToken, async (req, res) =>
   }
 });
 
-app.post('/api/protected/calls/:id/log', authenticateToken, async (req, res) => {
+app.post('/api/protected/calls/:id/log', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const callId = parseInt(req.params.id);
     const { status, duration, notes } = req.body;
@@ -999,7 +1017,7 @@ app.post('/api/protected/calls/:id/log', authenticateToken, async (req, res) => 
   }
 });
 
-app.get('/api/protected/calls/logs', authenticateToken, async (req, res) => {
+app.get('/api/protected/calls/logs', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
@@ -1016,7 +1034,7 @@ app.get('/api/protected/calls/logs', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/protected/calls/logs/:userId', authenticateToken, async (req, res) => {
+app.get('/api/protected/calls/logs/:userId', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const otherUserId = parseInt(req.params.userId);
     const page = parseInt(req.query.page) || 1;
@@ -1028,7 +1046,7 @@ app.get('/api/protected/calls/logs/:userId', authenticateToken, async (req, res)
   }
 });
 
-app.get('/api/protected/calls/analytics', authenticateToken, async (req, res) => {
+app.get('/api/protected/calls/analytics', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
@@ -1039,7 +1057,7 @@ app.get('/api/protected/calls/analytics', authenticateToken, async (req, res) =>
   }
 });
 
-app.put('/api/protected/calls/:id/notes', authenticateToken, async (req, res) => {
+app.put('/api/protected/calls/:id/notes', authenticateToken, callRateLimiter, async (req, res) => {
   try {
     const callId = parseInt(req.params.id);
     const { notes } = req.body;

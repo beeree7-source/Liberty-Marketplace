@@ -81,13 +81,12 @@ const canCommunicate = async (user1Id, user2Id) => {
 
 /**
  * Sanitize message content
+ * Removes all HTML tags to prevent XSS attacks
  */
 const sanitizeContent = (content) => {
   if (!content) return '';
-  // Basic sanitization - remove potential XSS
-  return content.replace(/<script[^>]*>.*?<\/script>/gi, '')
-                .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
-                .trim();
+  // Remove ALL HTML tags to prevent XSS
+  return content.replace(/<[^>]*>/g, '').trim();
 };
 
 // ============================================
