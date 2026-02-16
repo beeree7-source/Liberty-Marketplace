@@ -855,7 +855,7 @@ app.post('/api/:role/shifts/swap-cancel/:id', authenticateToken, shiftSwapServic
 app.post('/api/:role/shifts/offer-cover', authenticateToken, shiftSwapService.offerToCover);
 app.get('/api/:role/shifts/swap-history/:employee_id', authenticateToken, shiftSwapService.getSwapHistory);
 
-// Payroll (8 endpoints)
+// Payroll (15 endpoints)
 app.post('/api/:role/payroll/create-period', authenticateToken, payrollService.createPayrollPeriod);
 app.get('/api/:role/payroll/periods/:company_id', authenticateToken, payrollService.getPayrollPeriods);
 app.get('/api/:role/payroll/periods/:id', authenticateToken, payrollService.getPayrollPeriod);
@@ -870,6 +870,11 @@ app.get('/api/:role/payroll/period-records/:period_id', authenticateToken, payro
 app.get('/api/:role/payroll/summary/:company_id/:period_id', authenticateToken, payrollService.getPayrollSummaryByDepartment);
 app.get('/api/:role/payroll/settings/:company_id', authenticateToken, payrollService.getPayrollSettings);
 app.put('/api/:role/payroll/settings/:company_id', authenticateToken, payrollService.updatePayrollSettings);
+
+// Paystub endpoints
+app.get('/api/:role/payroll/paystub/:payroll_record_id', authenticateToken, payrollService.generatePaystub);
+app.post('/api/:role/payroll/paystub/:payroll_record_id/email', authenticateToken, payrollService.emailPaystub);
+app.get('/api/:role/payroll/paystubs/:employee_id', authenticateToken, payrollService.getEmployeePaystubs);
 
 // Reports & Analytics (10 endpoints)
 app.get('/api/:role/reports/labor-cost/:company_id', authenticateToken, reportingService.getLaborCostReport);
