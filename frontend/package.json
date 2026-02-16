@@ -1,1 +1,1 @@
-{\n  "name": "cigar-order-hub",\n  "version": "1.0.0",\n  "private": true,\n  "scripts": {\n    "start": "react-scripts start",\n    "build": "react-scripts build",\n    "test": "react-scripts test",\n    "eject": "react-scripts eject"\n  },\n  "dependencies": {\n    "lucide-react": "latest",\n    "react": "^18.0.0",\n    "react-dom": "^18.0.0",\n    "react-scripts": "5.0.0"\n  },\n  "devDependencies": {\n    "eslint": "^7.0.0"\n  }\n}
+{"name": "cigar-order-hub", "version": "1.0.0", "dependencies": {"lucide-react": "^0.5.1"}}
