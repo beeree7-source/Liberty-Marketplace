@@ -1247,6 +1247,71 @@ app.post('/api/protected/warehouse/users/:userId', authenticateToken, async (req
   }
 });
 
+// ============================================
+// Document Scanner & Digital Contracts
+// ============================================
+
+const multer = require('multer');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(__dirname, '..', 'uploads', 'temp'),
+  limits: {
+    fileSize: parseInt(process.env.MAX_DOCUMENT_SIZE || '52428800') // 50MB default
+  }
+});
+
+// Rate limiting for uploads (10 uploads per 5 minutes per user)
+const uploadLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10,
+  message: 'Too many uploads, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting for contract/document operations (100 requests per 15 minutes)
+const documentContractLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: 'Too many requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Import services
+const documentService = require('./document-service');
+const contractService = require('./contract-service');
+const signatureService = require('./signature-service');
+const auditService = require('./audit-service');
+
+// Document endpoints
+app.post('/api/protected/documents/upload', authenticateToken, uploadLimiter, upload.single('file'), documentService.uploadDocument);
+app.get('/api/protected/documents/supplier/:supplierId/retailer/:retailerId', authenticateToken, documentContractLimiter, documentService.getSupplierDocuments);
+app.get('/api/protected/documents/:id/download', authenticateToken, documentContractLimiter, documentService.getDocument);
+app.delete('/api/protected/documents/:id', authenticateToken, documentContractLimiter, documentService.deleteDocument);
+app.post('/api/protected/documents/:id/scan-enhance', authenticateToken, uploadLimiter, documentService.scanAndEnhanceDocument);
+
+// Contract endpoints
+app.post('/api/protected/contracts/create', authenticateToken, documentContractLimiter, contractService.createContract);
+app.post('/api/protected/contracts/:id/send', authenticateToken, documentContractLimiter, contractService.sendContractToRetailer);
+app.get('/api/protected/contracts/:id', authenticateToken, documentContractLimiter, contractService.getContractDetails);
+app.get('/api/protected/contracts/supplier/:supplierId', authenticateToken, documentContractLimiter, contractService.getSupplierContracts);
+app.get('/api/protected/contracts/retailer/:retailerId/pending', authenticateToken, documentContractLimiter, contractService.getPendingContracts);
+app.put('/api/protected/contracts/:id/status', authenticateToken, documentContractLimiter, contractService.updateContractStatus);
+app.get('/api/protected/contracts/:id/pdf', authenticateToken, documentContractLimiter, contractService.getContractPDF);
+
+// E-Signature endpoints
+app.post('/api/protected/contracts/:id/signature/initialize', authenticateToken, documentContractLimiter, signatureService.initializeSignatureWorkflow);
+app.post('/api/protected/contracts/:id/signature', authenticateToken, documentContractLimiter, signatureService.saveSignature);
+app.get('/api/protected/contracts/:id/signature-status', authenticateToken, documentContractLimiter, signatureService.getSignatureStatus);
+app.put('/api/protected/contracts/:id/complete', authenticateToken, documentContractLimiter, signatureService.completeContractSigning);
+
+// Audit endpoints
+app.get('/api/protected/:entityType/:entityId/audit-log', authenticateToken, documentContractLimiter, auditService.getAuditLog);
+
 // Initialize HTTP server for WebSocket
 const http = require('http');
 const server = http.createServer(app);
