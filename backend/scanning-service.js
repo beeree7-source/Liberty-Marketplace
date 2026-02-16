@@ -5,6 +5,7 @@
 
 const db = require('./database');
 const { logAuditEvent, updateProductLocation } = require('./warehouse-service');
+const websocket = require('./websocket-server');
 
 /**
  * Process a scan (universal scan endpoint)
@@ -39,6 +40,21 @@ const processScan = async (scanData, userId) => {
           session_id,
           metadata: JSON.stringify(metadata)
         });
+        
+        // Emit scan event
+        try {
+          websocket.emitScanEvent({
+            user_id: userId,
+            scan_type,
+            upc_code,
+            sku,
+            location_id,
+            status: 'error',
+            error_message: 'Product not found'
+          });
+        } catch (wsError) {
+          console.error('WebSocket emit error:', wsError);
+        }
         
         return reject(new Error('Product not found'));
       }
@@ -95,6 +111,22 @@ const processScan = async (scanData, userId) => {
           break;
         default:
           result.next_action = 'view_details';
+      }
+
+      // Emit successful scan event
+      try {
+        websocket.emitScanEvent({
+          user_id: userId,
+          scan_type,
+          product_id: product.id,
+          upc_code: upc_code || product.upc,
+          sku: sku || product.sku,
+          location_id,
+          quantity,
+          status: 'success'
+        });
+      } catch (wsError) {
+        console.error('WebSocket emit error:', wsError);
       }
 
       resolve(result);

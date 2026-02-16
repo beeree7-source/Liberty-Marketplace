@@ -1248,6 +1248,15 @@ app.post('/api/protected/warehouse/users/:userId', authenticateToken, async (req
   }
 });
 
-app.listen(PORT, () => {
+// Initialize HTTP server for WebSocket
+const http = require('http');
+const server = http.createServer(app);
+
+// Initialize WebSocket
+const websocketServer = require('./websocket-server');
+websocketServer.initializeWebSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
+  console.log(`WebSocket server initialized`);
 });
