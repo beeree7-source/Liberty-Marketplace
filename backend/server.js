@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const { registerUser, approveUser, uploadLicense, getUsers } = require("./users");
 const { createOrder, getOrders } = require("./orders");
 const { authenticateToken, login } = require("./auth");
@@ -15,15 +16,52 @@ app.use(cors({
 
 app.use(express.json());
 
+// ============================================
+// Rate Limiting Configuration
+// ============================================
+
+// General rate limiter for all requests
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Strict rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: false, // Count all requests
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// API rate limiter for protected endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many API requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply general rate limiting to all requests
+app.use(generalLimiter);
+
 // Public routes
 app.get("/", (req, res) => {
   res.json({ message: "Cigar Order Hub with JWT auth & SQLite" });
 });
-app.post("/api/users/register", registerUser);
-app.post("/api/auth/login", login);
 
-// Protected routes (require JWT)
-app.use("/api/protected", authenticateToken);
+// Authentication routes (with strict rate limiting)
+app.post("/api/users/register", authLimiter, registerUser);
+app.post("/api/auth/login", authLimiter, login);
+
+// Protected routes (require JWT and API rate limiting)
+app.use("/api/protected", apiLimiter, authenticateToken);
 app.post("/api/protected/users/:id/approve", approveUser);
 app.post("/api/protected/users/:id/license", uploadLicense);
 app.get("/api/protected/users", getUsers);
@@ -168,8 +206,8 @@ const authAdvanced = require('./auth-advanced');
 const { verifyAuth } = require('./middleware/auth');
 const { requireAdmin, requireManager, requireOwnerOrPermission } = require('./middleware/rbac');
 
-// Enhanced registration with RBAC
-app.post('/api/auth/register-rbac', async (req, res) => {
+// Enhanced registration with RBAC (with auth rate limiting)
+app.post('/api/auth/register-rbac', authLimiter, async (req, res) => {
   try {
     const { name, email, password, role, companyId } = req.body;
     const user = await authAdvanced.registerUser(name, email, password, role, companyId);
@@ -179,8 +217,8 @@ app.post('/api/auth/register-rbac', async (req, res) => {
   }
 });
 
-// Email/password login with sessions
-app.post('/api/auth/login-email', async (req, res) => {
+// Email/password login with sessions (with auth rate limiting)
+app.post('/api/auth/login-email', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
@@ -193,8 +231,8 @@ app.post('/api/auth/login-email', async (req, res) => {
   }
 });
 
-// SSO login (framework)
-app.post('/api/auth/login-sso', async (req, res) => {
+// SSO login (framework) (with auth rate limiting)
+app.post('/api/auth/login-sso', authLimiter, async (req, res) => {
   try {
     const { provider, code } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
@@ -207,8 +245,8 @@ app.post('/api/auth/login-sso', async (req, res) => {
   }
 });
 
-// API key login
-app.post('/api/auth/login-api-key', async (req, res) => {
+// API key login (with auth rate limiting)
+app.post('/api/auth/login-api-key', authLimiter, async (req, res) => {
   try {
     const { apiKey } = req.body;
     const result = await authAdvanced.loginWithAPIKey(apiKey);
@@ -218,8 +256,8 @@ app.post('/api/auth/login-api-key', async (req, res) => {
   }
 });
 
-// Refresh token
-app.post('/api/auth/refresh', async (req, res) => {
+// Refresh token (with auth rate limiting)
+app.post('/api/auth/refresh', authLimiter, async (req, res) => {
   try {
     const { refreshToken } = req.body;
     const result = await authAdvanced.refreshToken(refreshToken);
@@ -906,7 +944,6 @@ app.get('/api/:role/reports/scheduling-efficiency', authenticateToken, (req, res
 // Communication Endpoints (Messages & Calls)
 // ============================================
 const communication = require('./communication');
-const rateLimit = require('express-rate-limit');
 
 // Rate limiters for communication endpoints
 const messageRateLimiter = rateLimit({

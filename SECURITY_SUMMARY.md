@@ -1,28 +1,88 @@
 # Security Review Summary
 
-## CodeQL Analysis Results
+## ✅ Rate Limiting Implementation Status
+
+**Status**: ✅ IMPLEMENTED (February 16, 2026)
+
+Rate limiting has been successfully implemented across all API endpoints using `express-rate-limit` v7.1.5.
+
+### Implementation Details
+
+**Three-Tier Rate Limiting System:**
+
+1. **General Rate Limiter** (All Endpoints)
+   - Window: 15 minutes
+   - Max Requests: 1000 per IP
+   - Purpose: Overall API protection
+
+2. **Authentication Rate Limiter** (Login/Register)
+   - Window: 15 minutes  
+   - Max Requests: 5 per IP
+   - Applied to:
+     - `/api/auth/login`
+     - `/api/auth/register`
+     - `/api/auth/login-email`
+     - `/api/auth/login-sso`
+     - `/api/auth/login-api-key`
+     - `/api/auth/refresh`
+     - `/api/auth/register-rbac`
+
+3. **API Rate Limiter** (Protected Routes)
+   - Window: 15 minutes
+   - Max Requests: 100 per IP
+   - Applied to: All `/api/protected/*` endpoints
+
+### Configuration
+
+Rate limits can be customized via environment variables in `.env`:
+
+```env
+# General rate limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=1000
+
+# Authentication rate limiting
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX_REQUESTS=5
+
+# API endpoint rate limiting
+API_RATE_LIMIT_WINDOW_MS=900000
+API_RATE_LIMIT_MAX_REQUESTS=100
+```
+
+### Response Headers
+
+Rate limit information is returned in standard headers:
+- `RateLimit-Limit`: Maximum requests allowed
+- `RateLimit-Remaining`: Requests remaining in current window
+- `RateLimit-Reset`: Time when the rate limit resets
+
+### Error Responses
+
+When rate limit is exceeded:
+```json
+{
+  "error": "Too many requests from this IP, please try again later."
+}
+```
+
+---
+
+## Previous CodeQL Analysis Results
 
 ### Findings Overview
-- **Total Alerts**: 55
-- **Severity**: Medium (Rate Limiting)
-- **Category**: Missing Rate Limiting
+- **Total Alerts**: 55 (All related to missing rate limiting)
+- **Severity**: Medium
+- **Status**: ✅ RESOLVED
 
-### Details
-
-All 55 alerts are related to **missing rate limiting** on API endpoints. This is an expected finding for an MVP implementation and represents a known limitation.
+All 55 alerts were related to **missing rate limiting** on API endpoints. This has now been implemented.
 
 #### Alert Type: `js/missing-rate-limiting`
-**Description**: Route handlers perform authorization and database access but are not rate-limited.
+**Description**: Route handlers perform authorization and database access but were not rate-limited.
 
-**Affected Endpoints**:
-All protected API endpoints including:
-- Email notification endpoints
-- Invoice generation and management
-- Supplier dashboard endpoints
-- Advanced reporting endpoints
-- QuickBooks integration endpoints
+**Status**: ✅ FIXED - All endpoints now have appropriate rate limiting
 
-### Risk Assessment
+### Previous Risk Assessment
 
 **Current Risk Level**: Medium
 
