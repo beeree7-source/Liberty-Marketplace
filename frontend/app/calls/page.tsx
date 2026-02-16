@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface CallLog {
@@ -57,7 +57,7 @@ export default function CallsPage() {
   const router = useRouter();
 
   // API call helper
-  const apiCall = async (url: string, method = "GET", body?: any) => {
+  const apiCall = useCallback(async (url: string, method = "GET", body?: any) => {
     const headers: any = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -74,7 +74,7 @@ export default function CallsPage() {
     }
 
     return res.json();
-  };
+  }, [token]);
 
   // Initialize - check for token and load user
   useEffect(() => {
@@ -96,9 +96,9 @@ export default function CallsPage() {
       loadCallLogs();
       loadAnalytics();
     }
-  }, [token, filters]);
+  }, [token, filters, loadCallLogs, loadAnalytics]);
 
-  const loadCallLogs = async () => {
+  const loadCallLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -116,9 +116,9 @@ export default function CallsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiCall, filters]);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (filters.startDate) params.append("startDate", filters.startDate);
@@ -131,7 +131,7 @@ export default function CallsPage() {
     } catch (err: any) {
       console.error("Failed to load analytics:", err);
     }
-  };
+  }, [apiCall, filters]);
 
   const openNotesModal = (call: CallLog) => {
     setSelectedCall(call);

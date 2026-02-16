@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface Conversation {
@@ -49,7 +49,7 @@ export default function MessagesPage() {
   const router = useRouter();
 
   // API call helper
-  const apiCall = async (url: string, method = "GET", body?: any) => {
+  const apiCall = useCallback(async (url: string, method = "GET", body?: any) => {
     const headers: any = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -66,7 +66,7 @@ export default function MessagesPage() {
     }
 
     return res.json();
-  };
+  }, [token]);
 
   // Initialize - check for token and load user
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function MessagesPage() {
       
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [token, loadConversations, loadUnreadCount]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -110,27 +110,27 @@ export default function MessagesPage() {
       
       return () => clearInterval(interval);
     }
-  }, [selectedConversation, token]);
+  }, [selectedConversation, token, loadMessages]);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const data = await apiCall("/api/protected/messages/conversations");
       setConversations(data);
     } catch (err: any) {
       console.error("Failed to load conversations:", err);
     }
-  };
+  }, [apiCall]);
 
-  const loadUnreadCount = async () => {
+  const loadUnreadCount = useCallback(async () => {
     try {
       const data = await apiCall("/api/protected/messages/unread/count");
       setUnreadCount(data.count);
     } catch (err: any) {
       console.error("Failed to load unread count:", err);
     }
-  };
+  }, [apiCall]);
 
-  const loadMessages = async (otherUserId: number) => {
+  const loadMessages = useCallback(async (otherUserId: number) => {
     try {
       const data = await apiCall(`/api/protected/messages/thread/${otherUserId}`);
       setMessages(data.reverse()); // Reverse to show oldest first
@@ -152,7 +152,7 @@ export default function MessagesPage() {
     } catch (err: any) {
       setError(err.message);
     }
-  };
+  }, [apiCall, currentUser, loadConversations, loadUnreadCount]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
