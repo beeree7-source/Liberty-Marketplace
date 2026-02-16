@@ -902,6 +902,154 @@ app.get('/api/:role/reports/scheduling-efficiency', authenticateToken, (req, res
   res.status(501).json({ message: 'Report endpoints will be implemented with analytics service' });
 });
 
+// ============================================
+// Communication Endpoints (Messages & Calls)
+// ============================================
+const communication = require('./communication');
+
+// Messaging Endpoints
+app.post('/api/protected/messages/send', authenticateToken, async (req, res) => {
+  try {
+    const { recipientId, content, messageType, attachmentUrl, attachmentName } = req.body;
+    const result = await communication.sendMessage(
+      req.user.id, 
+      recipientId, 
+      content, 
+      messageType || 'text', 
+      attachmentUrl, 
+      attachmentName
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/messages/conversations', authenticateToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const conversations = await communication.getConversations(req.user.id, page, limit);
+    res.json(conversations);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/messages/thread/:userId', authenticateToken, async (req, res) => {
+  try {
+    const otherUserId = parseInt(req.params.userId);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const messages = await communication.getMessageThread(req.user.id, otherUserId, page, limit);
+    res.json(messages);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/protected/messages/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const messageId = parseInt(req.params.id);
+    const result = await communication.markMessageAsRead(messageId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/protected/messages/:id', authenticateToken, async (req, res) => {
+  try {
+    const messageId = parseInt(req.params.id);
+    const result = await communication.deleteMessage(messageId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/messages/unread/count', authenticateToken, async (req, res) => {
+  try {
+    const count = await communication.getUnreadCount(req.user.id);
+    res.json({ count });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Call Log Endpoints
+app.post('/api/protected/calls/initiate', authenticateToken, async (req, res) => {
+  try {
+    const { recipientId, callType } = req.body;
+    const result = await communication.initiateCall(req.user.id, recipientId, callType || 'outbound');
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/protected/calls/:id/log', authenticateToken, async (req, res) => {
+  try {
+    const callId = parseInt(req.params.id);
+    const { status, duration, notes } = req.body;
+    const result = await communication.logCallDetails(callId, req.user.id, status, duration || 0, notes);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/calls/logs', authenticateToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const filters = {
+      callType: req.query.callType,
+      status: req.query.status,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate
+    };
+    const logs = await communication.getCallLogs(req.user.id, page, limit, filters);
+    res.json(logs);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/calls/logs/:userId', authenticateToken, async (req, res) => {
+  try {
+    const otherUserId = parseInt(req.params.userId);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const history = await communication.getCallHistoryWithUser(req.user.id, otherUserId, page, limit);
+    res.json(history);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/protected/calls/analytics', authenticateToken, async (req, res) => {
+  try {
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+    const analytics = await communication.getCallAnalytics(req.user.id, startDate, endDate);
+    res.json(analytics);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/protected/calls/:id/notes', authenticateToken, async (req, res) => {
+  try {
+    const callId = parseInt(req.params.id);
+    const { notes } = req.body;
+    const result = await communication.updateCallNotes(callId, req.user.id, notes);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });
