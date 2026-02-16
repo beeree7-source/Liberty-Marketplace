@@ -1248,6 +1248,47 @@ app.post('/api/protected/warehouse/users/:userId', authenticateToken, async (req
 });
 
 // ============================================
+// Retailer Subscription Management
+// ============================================
+
+const subscriptionController = require('./retailer-subscription-controller');
+
+// Subscription tier routes
+app.get('/api/retailer-subscription/tiers', subscriptionController.getSubscriptionTiers);
+app.get('/api/retailer-subscription/current', authenticateToken, subscriptionController.getCurrentSubscription);
+app.post('/api/retailer-subscription/subscribe', authenticateToken, subscriptionController.subscribeToTier);
+app.post('/api/retailer-subscription/change-tier', authenticateToken, subscriptionController.changeSubscriptionTier);
+app.post('/api/retailer-subscription/cancel', authenticateToken, subscriptionController.cancelSubscription);
+app.post('/api/retailer-subscription/reactivate', authenticateToken, subscriptionController.reactivateSubscription);
+app.get('/api/retailer-subscription/history', authenticateToken, subscriptionController.getSubscriptionHistory);
+
+// Feature access routes
+app.get('/api/retailer-subscription/features', authenticateToken, subscriptionController.getAvailableFeatures);
+app.get('/api/retailer-subscription/features/:featureCode', authenticateToken, subscriptionController.checkFeatureAccess);
+
+// Usage tracking routes
+app.get('/api/retailer-subscription/usage', authenticateToken, subscriptionController.getUsageStatistics);
+app.get('/api/retailer-subscription/usage/:metricType/history', authenticateToken, subscriptionController.getUsageHistory);
+
+// Billing routes
+app.get('/api/retailer-subscription/billing/history', authenticateToken, subscriptionController.getBillingHistory);
+app.get('/api/retailer-subscription/billing/invoice/:invoiceId', authenticateToken, subscriptionController.getInvoice);
+
+// Payment method routes
+app.get('/api/retailer-subscription/payment-methods', authenticateToken, subscriptionController.getPaymentMethods);
+app.post('/api/retailer-subscription/payment-methods', authenticateToken, subscriptionController.addPaymentMethod);
+app.put('/api/retailer-subscription/payment-methods/:paymentMethodId/default', authenticateToken, subscriptionController.setDefaultPaymentMethod);
+app.delete('/api/retailer-subscription/payment-methods/:paymentMethodId', authenticateToken, subscriptionController.removePaymentMethod);
+
+// Location routes
+app.get('/api/retailer-subscription/locations', authenticateToken, subscriptionController.getLocations);
+app.post('/api/retailer-subscription/locations', authenticateToken, subscriptionController.addLocation);
+
+// Add-on routes
+app.get('/api/retailer-subscription/add-ons', subscriptionController.getAvailableAddOns);
+app.get('/api/retailer-subscription/add-ons/active', authenticateToken, subscriptionController.getActiveAddOns);
+
+// ============================================
 // Document Scanner & Digital Contracts
 // ============================================
 
