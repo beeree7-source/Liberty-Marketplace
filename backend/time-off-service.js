@@ -283,6 +283,7 @@ const approveTimeOffRequest = (req, res) => {
     }
 
     // Update request status
+    // TODO: Wrap this and balance update in a database transaction for atomicity
     const updateQuery = `
       UPDATE time_off_requests 
       SET status = 'approved', approved_by = ?, approved_at = CURRENT_TIMESTAMP, notes = ?
@@ -295,6 +296,7 @@ const approveTimeOffRequest = (req, res) => {
       }
 
       // Update balance if not unpaid leave
+      // Note: This should be in a transaction with the status update above
       if (request.leave_type !== 'unpaid') {
         const balanceQuery = `
           UPDATE time_off_balances 
@@ -363,7 +365,13 @@ const denyTimeOffRequest = (req, res) => {
  */
 const cancelTimeOffRequest = (req, res) => {
   const { id } = req.params;
+  // Note: In production, employee_id should come from authenticated user's JWT token
+  // For now, we accept it from request body but this should be validated against auth token
   const { employee_id } = req.body;
+
+  if (!employee_id) {
+    return res.status(400).json({ error: 'employee_id is required' });
+  }
 
   // Get request details
   db.get('SELECT * FROM time_off_requests WHERE id = ?', [id], (err, request) => {
@@ -373,6 +381,7 @@ const cancelTimeOffRequest = (req, res) => {
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
+    // TODO: In production, verify employee_id matches authenticated user from JWT token
     if (request.employee_id !== employee_id) {
       return res.status(403).json({ error: 'Unauthorized to cancel this request' });
     }
@@ -381,6 +390,7 @@ const cancelTimeOffRequest = (req, res) => {
     }
 
     // If approved, need to restore balance
+    // TODO: Wrap status update and balance restoration in a transaction
     if (request.status === 'approved' && request.leave_type !== 'unpaid') {
       const balanceQuery = `
         UPDATE time_off_balances 

@@ -5,6 +5,10 @@ const db = require('./database');
  * Provides HR reports and analytics for labor costs, productivity, compliance
  */
 
+// Configuration constants
+const EXCESSIVE_OVERTIME_THRESHOLD = 60; // Hours - configurable per company policy
+const PENDING_APPROVAL_DAYS_THRESHOLD = 7; // Days before flagging as compliance issue
+
 // ==================== Labor Cost Reports ====================
 
 /**
@@ -311,7 +315,7 @@ const getComplianceReport = (req, res) => {
         AND overtime_date >= ? 
         AND overtime_date <= ?
       GROUP BY employee_id
-      HAVING total_ot > 60
+      HAVING total_ot > ?
     ) excessive_ot
     JOIN companies_employees ce ON excessive_ot.employee_id = ce.id
     
@@ -330,7 +334,11 @@ const getComplianceReport = (req, res) => {
 
   db.all(
     query,
-    [company_id, start_date, end_date, company_id, start_date, end_date, company_id],
+    [
+      company_id, start_date, end_date, 
+      company_id, start_date, end_date, EXCESSIVE_OVERTIME_THRESHOLD,
+      company_id
+    ],
     (err, rows) => {
       if (err) {
         return res.status(500).json({ error: err.message });

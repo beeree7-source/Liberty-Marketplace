@@ -14,23 +14,37 @@ const migrationFiles = fs.readdirSync(migrationsPath)
 
 console.log('Running migrations...');
 
-migrationFiles.forEach(file => {
-  console.log(`Running: ${file}`);
-  const sql = fs.readFileSync(path.join(migrationsPath, file), 'utf8');
-  
-  db.exec(sql, (err) => {
+// Run migrations sequentially to avoid race conditions
+const runMigrationsSequentially = async () => {
+  for (const file of migrationFiles) {
+    console.log(`Running: ${file}`);
+    const sql = fs.readFileSync(path.join(migrationsPath, file), 'utf8');
+    
+    try {
+      await new Promise((resolve, reject) => {
+        db.exec(sql, (err) => {
+          if (err) {
+            console.error(`Error in ${file}:`, err.message);
+            reject(err);
+          } else {
+            console.log(`✓ ${file} completed`);
+            resolve();
+          }
+        });
+      });
+    } catch (err) {
+      console.error(`Failed to run ${file}, stopping migrations`);
+      break;
+    }
+  }
+
+  db.close((err) => {
     if (err) {
-      console.error(`Error in ${file}:`, err.message);
+      console.error('Error closing database:', err.message);
     } else {
-      console.log(`✓ ${file} completed`);
+      console.log('All migrations completed');
     }
   });
-});
+};
 
-db.close((err) => {
-  if (err) {
-    console.error('Error closing database:', err.message);
-  } else {
-    console.log('All migrations completed');
-  }
-});
+runMigrationsSequentially();
